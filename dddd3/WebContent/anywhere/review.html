@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>리뷰 페이지</title>
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
+	<script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
+	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
+	<script src="https://developers.kakao.com/sdk/js/kakao.js"></script>
+	<link rel="icon" type="image/x-icon" href="favicon.ico">
+</head>
+
+<body>
+	<!-- 리뷰 작성 폼 -->
+	<form id="reviewForm">
+		<input type="hidden" name="user_name" id="user_name">
+		가게 이름: <input type="text" name="store_name" required class="form-control" id="store_name" disabled><br>
+		리뷰: <textarea name="user_review" required class="form-control" id="user_review"></textarea><br>
+		평점: <input type="text" name="user_rating" required class="form-control" id="user_rating"><br>
+		<button type="submit" class="btn btn-primary">리뷰 제출</button>
+	</form>
+
+	<!-- 모달 창 -->
+	<div class="modal fade" id="reviewModal" tabindex="-1" role="dialog" aria-labelledby="reviewModalLabel"
+		aria-hidden="true">
+		<div class="modal-dialog modal-lg" role="document">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title" id="reviewModalLabel">리뷰 보기</h5>
+					<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+						<span aria-hidden="true">&times;</span>
+					</button>
+				</div>
+				<div class="modal-body">
+					<!-- 리뷰 목록 -->
+					<ul id="reviewsList"></ul>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-secondary" data-dismiss="modal">닫기</button>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<script>
+		const urlParams = new URLSearchParams(window.location.search);
+		const storeName = urlParams.get('storeName');
+
+		$(document).ready(function () {
+			// Kakao 로그인 상태 확인
+			Kakao.Auth.getStatusInfo(function (statusInfo) {
+				if (statusInfo.status === 'connected') {
+					// 이미 로그인된 경우 사용자 정보 가져오기
+					Kakao.API.request({
+						url: '/v2/user/me',
+						success: function (response) {
+							const user_id = response.id; // 사용자의 카카오 user_id
+							$('#user_name').val(user_id);
+
+							// 가게 이름 가져오기
+							const storeName = getParameterByName('storeName'); // URL에서 가게 이름 파라미터를 가져옵니다.
+							$('#store_name').val(storeName);
+
+							// 페이지 로딩시 리뷰 로드
+							loadReviews(storeName);
+						},
+						fail: function (error) {
+							console.log(error);
+						}
+					});
+				}
+			});
+
+			// 리뷰 제출
+			$("#reviewForm").on("submit", function (event) {
+				event.preventDefault();
+
+				const user_name = $("#user_name").val();
+				const user_review = $("#user_review").val();
+				const user_rating = $("#user_rating").val();
+				const store_name = $("#store_name").val();
+
+				// 사용자가 리뷰와 평점을 입력했는지 확인
+				if (user_review === "" || user_rating === "") {
+					alert("리뷰와 평점을 입력하세요.");
+					return;
+				}
+
+				const formData = {
+					user_name: user_name,
+					user_review: user_review,
+					user_rating: user_rating,
+					store_name: store_name
+				};
+
+				// formData를 서버로 전송하고 리뷰를 저장하는 코드 (이미지는 적절하게 수정 필요)
+				$.ajax({
+					type: 'POST',
+					url: '/ReviewServlet',
+					data: formData,
+					success: function (response) {
+						if (response === "success") {
+							alert("리뷰가 성공적으로 저장되었습니다.");
+							// 리뷰 저장 완료 후, 현재 창을 닫음
+							window.close();
+						} else {
+							alert("리뷰 저장에 실패하였습니다. 다시 시도해주세요.");
+						}
+					},
+					error: function (xhr, status, error) {
+						console.log(error);
+					}
+				});
+			});
+
+			// 리뷰 로드
+			function loadReviews() {
+				$.get("/FetchReviewsServlet?storeName=" + encodeURIComponent(storeName), function (data) {
+					const reviews = data;
+					const reviewList = $("#reviewsList");
+					reviewList.empty();
+
+					reviews.forEach(review => {
+						reviewList.append(`
+                            <li>
+                                <strong>User ID: ${review.user_id}</strong><br>
+                                리뷰 내용: ${review.user_review}<br>
+                                평점: ${review.user_rating}<br>
+                                가게이름: ${review.store_name}<br>
+                            </li>
+                        `);
+					});
+				});
+			}
+		});
+
+		// URL에서 파라미터를 추출하는 함수
+		function getParameterByName(name, url) {
+			if (!url) url = window.location.href;
+			name = name.replace(/[\[\]]/g, '\\$&');
+			const regex = new RegExp('[?&]' + name + '(=([^&#]*)|&|#|$)');
+			const results = regex.exec(url);
+			if (!results) return null;
+			if (!results[2]) return '';
+			return decodeURIComponent(results[2].replace(/\+/g, ' '));
+		}
+	</script>
+
+	<script>
+		Kakao.init('f5fb468455abb768835f1cae5f631b25');
+	</script>
+</body>
+
+</html>

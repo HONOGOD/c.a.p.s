@@ -1,0 +1,39 @@
+body{
+  display: flex;
+}
+
+.menu {
+  
+  height:34px;
+  position: relative;  
+  
+}
+
+.menu .search input {
+  width:36px;
+  height:34px;
+  padding: 4px 10px;
+  border:1px solid #ccc;
+  box-sizing: border-box;
+  border-radius: 5px;
+  outline: none;
+  background-color: #fff;
+  color:#777;
+  font-size: 12px;
+  transition: width .4s;
+}
+
+.menu .search input:focus{
+  width:190px;
+  border-color:#616952;
+}
+
+.menu .search .material-icons{
+  height:24px;
+  position:absolute;
+  top:0;
+  bottom:0;
+  right:5px;
+  margin:auto;
+}
+
